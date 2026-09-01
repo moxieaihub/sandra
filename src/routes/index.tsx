@@ -65,7 +65,7 @@ function AcademyPage() {
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur">
         <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3">
           <a href="#top" className="flex min-w-0 items-center gap-3">
-            <img src={logoAsset.url} alt="" width={36} height={36} className="h-9 w-9 shrink-0" />
+            <img src={logoAsset} alt="" width={36} height={36} className="h-9 w-9 shrink-0" />
             <span className="hidden truncate text-xs tracking-[0.22em] text-muted-foreground sm:block">
               SANDRA OKUNZUWA ENTERTAINMENT ACADEMY
             </span>
@@ -96,7 +96,7 @@ function AcademyPage() {
         {/* Hero */}
         <section className="relative isolate flex min-h-[88vh] items-end overflow-hidden">
           <img
-            src={heroAsset.url}
+            src={heroAsset}
             alt="Sandra Okunzuwa holding her YouTube Gold Play Button award"
             width={1141}
             height={1280}
@@ -140,7 +140,7 @@ function AcademyPage() {
           <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] lg:items-start">
             <Reveal>
               <img
-                src={portraitAsset.url}
+                src={portraitAsset}
                 alt="Portrait of Sandra Okunzuwa with her YouTube award"
                 width={1141}
                 height={1280}
@@ -371,7 +371,7 @@ function AcademyPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-14 sm:flex-row sm:justify-between">
           <div>
             <img
-              src={logoAsset.url}
+              src={logoAsset}
               alt=""
               width={44}
               height={44}
