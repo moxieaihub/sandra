@@ -1,0 +1,1 @@
+ALTER TABLE public.waitlist_signups ALTER COLUMN signed_up_at TYPE text USING signed_up_at::text; ALTER TABLE public.waitlist_signups ALTER COLUMN signed_up_at SET DEFAULT now()::text;
