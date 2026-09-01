@@ -18,9 +18,9 @@ import {
   formatNaira,
 } from "@/lib/academy-content";
 import { tiersQueryOptions } from "@/lib/tiers";
-import heroAsset from "@/assets/sandra-award.jpg.asset.json";
+import heroAsset from "@/assets/sandra-award.jpg";
 const portraitAsset = heroAsset;
-import logoAsset from "@/assets/logo-soea.png.asset.json";
+import logoAsset from "@/assets/logo-soea.png";
 
 const TITLE = "Sandra Okunzuwa Entertainment Academy — Enrol for Cohort 1";
 const DESCRIPTION =
