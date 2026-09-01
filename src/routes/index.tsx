@@ -385,9 +385,9 @@ function AcademyPage() {
               WhatsApp {ACADEMY.supportWhatsApp}
             </p>
             <p className="mt-4 text-sm">
-              <Link to="/waitlist" className="text-primary underline-offset-4 hover:underline">
+              {/* <Link to="/waitlist" className="text-primary underline-offset-4 hover:underline">
                 Join the waitlist
-              </Link>
+              </Link> */}
             </p>
           </div>
           <nav aria-label="Social links" className="flex flex-wrap gap-6 text-sm">
