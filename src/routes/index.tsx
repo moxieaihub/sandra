@@ -128,9 +128,9 @@ function AcademyPage() {
             </div>
             <p className="mt-5 text-sm text-muted-foreground">
               Cohort 1 begins {ACADEMY.dates.cohortStarts} · Limited places ·{" "}
-              <Link to="/waitlist" className="text-primary underline-offset-4 hover:underline">
+              {/* <Link to="/waitlist" className="text-primary underline-offset-4 hover:underline">
                 Join the waitlist instead
-              </Link>
+              </Link> */}
             </p>
           </div>
         </section>
