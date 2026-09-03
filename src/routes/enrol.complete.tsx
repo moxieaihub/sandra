@@ -141,6 +141,7 @@ function CompletePage() {
 
         {receipt.whatsappLink ? (
           
+               
             href={receipt.whatsappLink}
             target="_blank"
             rel="noreferrer"
