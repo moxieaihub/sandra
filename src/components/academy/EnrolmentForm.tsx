@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { Reveal } from "@/components/academy/Reveal";
@@ -10,11 +9,19 @@ import {
   NIGERIAN_STATES,
   formatNaira,
 } from "@/lib/academy-content";
-import { verifyEnrolmentPayment } from "@/lib/enrolment.functions";
-import { makeReference, openPaystackCheckout, paymentsEnabled } from "@/lib/paystack";
+import { createZapCheckoutFn } from "@/lib/zap-pay.functions";
 import { COUNTRIES, DEFAULT_COUNTRY_ISO2, countryByIso2, countryLabel, toE164 } from "@/lib/countries";
 import type { Tier } from "@/lib/tiers";
 import { supabase } from "@/integrations/supabase/client";
+
+function makeReference(): string {
+  return `SOEA-${Date.now().toString(36).toUpperCase()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)
+    .toUpperCase()}`;
+}
+
+const paymentsEnabled = true;
 
 type FormState = {
   fullName: string;
@@ -26,17 +33,6 @@ type FormState = {
   category: string;
   heardFrom: string;
   phoneCountry: string;
-};
-
-type Receipt = {
-  reference: string;
-  tierName: string;
-  amountPaid: number;
-  fullName: string;
-  email: string;
-  paidAt: string;
-  whatsappLink: string;
-  emailSent: boolean;
 };
 
 const emptyForm: FormState = {
@@ -81,9 +77,7 @@ export function EnrolmentForm({
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState | "tier", string>>>({});
-  const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
-  const verify = useServerFn(verifyEnrolmentPayment);
 
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? null;
 
@@ -98,10 +92,6 @@ export function EnrolmentForm({
       const phoneCountry = countryByIso2(form.phoneCountry);
       const country = countryByIso2(form.country);
       const phoneE164 = toE164(phoneCountry?.dial ?? "+234", form.phone);
-      if (!paymentsEnabled)
-        throw new Error(
-          "Payments are not live on this site yet. Add your Paystack keys to start taking enrolments.",
-        );
 
       const { data: registration, error } = await supabase
         .from("registrations")
@@ -128,23 +118,20 @@ export function EnrolmentForm({
         throw new Error("We couldn't start your enrolment. Please check your details and try again.");
 
       const reference = makeReference();
-      const result = await openPaystackCheckout({
-        email: form.email.trim().toLowerCase(),
-        amountNaira: selectedTier.price_naira,
-        reference,
-        metadata: { registration_id: registration.id, tier_id: selectedTier.id },
+      const redirectUrl = `${window.location.origin}/enrol/complete?registrationId=${registration.id}&reference=${reference}`;
+
+      const { checkoutUrl } = await createZapCheckoutFn({
+        data: {
+          amountNaira: selectedTier.price_naira,
+          reference,
+          description: `${selectedTier.name} — ${ACADEMY.name}`,
+          redirectUrl,
+          metadata: { registration_id: registration.id, tier_id: selectedTier.id },
+        },
       });
 
-      if (!result) throw new Error("You closed the payment window before paying, so nothing was charged.");
-
-      return verify({ data: { registrationId: registration.id, reference: result.reference } });
-    },
-    onSuccess: (result) => {
-      setFailure(null);
-      setReceipt(result as Receipt);
-      requestAnimationFrame(() =>
-        document.getElementById("enrol")?.scrollIntoView({ block: "start" }),
-      );
+      window.location.href = checkoutUrl;
+      return null;
     },
     onError: (error: Error) => setFailure(error.message),
   });
@@ -156,58 +143,6 @@ export function EnrolmentForm({
     if (Object.keys(nextErrors).length > 0) return;
     setFailure(null);
     enrol.mutate();
-  }
-
-  if (receipt) {
-    const firstName = receipt.fullName.trim().split(/\s+/)[0];
-    return (
-      <div className="rounded-lg border border-primary bg-secondary p-6 sm:p-10">
-        <h3 className="font-display text-4xl text-primary">You're in.</h3>
-        <p className="mt-3 text-lg">
-          Welcome to {ACADEMY.name}, {firstName}.
-        </p>
-        <dl className="mt-8 grid gap-x-8 gap-y-3 border-t border-border pt-6 text-sm sm:grid-cols-2">
-          {[
-            ["Reference", receipt.reference],
-            ["Package", receipt.tierName],
-            ["Amount paid", formatNaira(receipt.amountPaid)],
-            ["Date", receipt.paidAt],
-            ["Name", receipt.fullName],
-            ["Email", receipt.email],
-          ].map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="text-right font-medium">{value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        {receipt.whatsappLink ? (
-          <a
-            href={receipt.whatsappLink}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-8 inline-flex w-full items-center justify-center rounded-lg bg-primary px-6 py-4 text-base font-semibold text-primary-foreground transition hover:opacity-90 sm:w-auto"
-          >
-            Join your WhatsApp community
-          </a>
-        ) : (
-          <p className="mt-8 rounded-lg border border-border p-4 text-sm text-muted-foreground">
-            Your community link is being finalised — the academy team will email it to you shortly.
-          </p>
-        )}
-
-        <p className="mt-4 text-sm text-muted-foreground">
-          {receipt.emailSent
-            ? `We've also emailed your receipt and this link to ${receipt.email}. Save the link — it's how you get into the community.`
-            : `Save this link — it's how you get into the community. If the receipt email doesn't arrive, contact ${ACADEMY.supportEmail}.`}
-        </p>
-        <p className="mt-6 border-t border-border pt-6 text-sm text-muted-foreground">
-          Next: you'll be added to the cohort group, receive your onboarding pack, and your first
-          lessons unlock when Cohort 1 begins on {ACADEMY.dates.cohortStarts}.
-        </p>
-      </div>
-    );
   }
 
   return (
@@ -407,8 +342,8 @@ export function EnrolmentForm({
               : `Pay ${selectedTier ? formatNaira(selectedTier.price_naira) : "—"}`}
         </button>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Card and bank transfer, secured by Paystack.
-          {paymentsEnabled ? "" : " Payments go live once the academy's Paystack keys are added."}
+          Card, bank transfer, and crypto.
+          {paymentsEnabled ? "" : " Payments go live once the academy's Zap Pay keys are added."}
         </p>
       </form>
     </Reveal>
