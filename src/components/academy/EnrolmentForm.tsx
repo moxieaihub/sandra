@@ -10,9 +10,9 @@ import {
   formatNaira,
 } from "@/lib/academy-content";
 import { createZapCheckoutFn } from "@/lib/zap-pay.functions";
+import { createRegistrationFn } from "@/lib/registration.functions";
 import { COUNTRIES, DEFAULT_COUNTRY_ISO2, countryByIso2, countryLabel, toE164 } from "@/lib/countries";
 import type { Tier } from "@/lib/tiers";
-import { supabase } from "@/integrations/supabase/client";
 
 function makeReference(): string {
   return `SOEA-${Date.now().toString(36).toUpperCase()}-${Math.random()
@@ -93,32 +93,26 @@ export function EnrolmentForm({
       const country = countryByIso2(form.country);
       const phoneE164 = toE164(phoneCountry?.dial ?? "+234", form.phone);
 
-      const { data: registration, error } = await supabase
-        .from("registrations")
-        .insert({
-          full_name: form.fullName.trim(),
+      const { id: registrationId } = await createRegistrationFn({
+        data: {
+          fullName: form.fullName.trim(),
           email: form.email.trim().toLowerCase(),
           phone: phoneE164,
-          phone_country_code: phoneCountry?.dial ?? null,
-          phone_national: form.phone.replace(/\D/g, "").replace(/^0+/, ""),
-          phone_e164: phoneE164,
+          phoneCountryCode: phoneCountry?.dial ?? null,
+          phoneNational: form.phone.replace(/\D/g, "").replace(/^0+/, ""),
+          phoneE164,
           country: country?.name ?? null,
-          country_code: country?.iso2 ?? null,
+          countryCode: country?.iso2 ?? null,
           state: form.state.trim(),
           city: form.city.trim() || null,
           category: form.category,
-          tier_id: selectedTier.id,
-          heard_from: form.heardFrom,
-          payment_status: "pending",
-        })
-        .select("id")
-        .single();
-
-      if (error || !registration)
-        throw new Error("We couldn't start your enrolment. Please check your details and try again.");
+          tierId: selectedTier.id,
+          heardFrom: form.heardFrom,
+        },
+      });
 
       const reference = makeReference();
-      const redirectUrl = `${window.location.origin}/enrol/complete?registrationId=${registration.id}&reference=${reference}`;
+      const redirectUrl = `${window.location.origin}/enrol/complete?registrationId=${registrationId}&reference=${reference}`;
 
       const { checkoutUrl } = await createZapCheckoutFn({
         data: {
@@ -126,7 +120,7 @@ export function EnrolmentForm({
           reference,
           description: `${selectedTier.name} — ${ACADEMY.name}`,
           redirectUrl,
-          metadata: { registration_id: registration.id, tier_id: selectedTier.id },
+          metadata: { registration_id: registrationId, tier_id: selectedTier.id },
         },
       });
 
