@@ -142,7 +142,7 @@ function CompletePage() {
         </dl>
 
         {receipt.whatsappLink ? (
-          
+          <a
             href={receipt.whatsappLink}
             target="_blank"
             rel="noreferrer"
