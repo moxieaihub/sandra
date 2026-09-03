@@ -53,7 +53,7 @@ function CompletePage() {
           setTimeout(() => setAttempt((a) => a + 1), 2000);
         } else {
           setError(
-            "Your payment is taking longer than usual to confirm. If you were charged, contact support with your reference and we'll sort it out.",
+            "Your payment is taking longer than usual to confirm. If you were charged, contact support with your reference and we'll sort it out."
           );
         }
       } catch (err) {
@@ -67,9 +67,8 @@ function CompletePage() {
     };
   }, [attempt, registrationId, reference, finalize]);
 
-  // Auto-redirect to WhatsApp once payment is confirmed
   useEffect(() => {
-    if (!receipt?.whatsappLink) return;
+    if (!receipt || !receipt.whatsappLink) return;
 
     const countdown = setInterval(() => {
       setSecondsLeft((s) => Math.max(0, s - 1));
@@ -107,7 +106,17 @@ function CompletePage() {
     );
   }
 
-  const firstName = receipt.fullName.trim().split(/\s+/)[0];
+  const nameParts = receipt.fullName.trim().split(/\s+/);
+  const firstName = nameParts[0];
+
+  const rows = [
+    { label: "Reference", value: receipt.reference },
+    { label: "Package", value: receipt.tierName },
+    { label: "Amount paid", value: formatNaira(receipt.amountPaid) },
+    { label: "Date", value: receipt.paidAt },
+    { label: "Name", value: receipt.fullName },
+    { label: "Email", value: receipt.email },
+  ];
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-16">
@@ -124,24 +133,16 @@ function CompletePage() {
         ) : null}
 
         <dl className="mt-8 grid gap-x-8 gap-y-3 border-t border-border pt-6 text-sm sm:grid-cols-2">
-          {[
-            ["Reference", receipt.reference],
-            ["Package", receipt.tierName],
-            ["Amount paid", formatNaira(receipt.amountPaid)],
-            ["Date", receipt.paidAt],
-            ["Name", receipt.fullName],
-            ["Email", receipt.email],
-          ].map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="text-right font-medium">{value}</dd>
+          {rows.map((row) => (
+            <div key={row.label} className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{row.label}</dt>
+              <dd className="text-right font-medium">{row.value}</dd>
             </div>
           ))}
         </dl>
 
         {receipt.whatsappLink ? (
           
-               
             href={receipt.whatsappLink}
             target="_blank"
             rel="noreferrer"
@@ -157,8 +158,8 @@ function CompletePage() {
 
         <p className="mt-4 text-sm text-muted-foreground">
           {receipt.emailSent
-            ? `We've also emailed your receipt and this link to ${receipt.email}, in case you need it again.`
-            : `Save this page's link — it's how you get into the community. If the receipt email doesn't arrive, contact ${ACADEMY.supportEmail}.`}
+            ? "We've also emailed your receipt and this link to " + receipt.email + ", in case you need it again."
+            : "Save this page's link — it's how you get into the community. If the receipt email doesn't arrive, contact " + ACADEMY.supportEmail + "."}
         </p>
       </div>
     </main>
